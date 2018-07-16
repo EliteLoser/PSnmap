@@ -15,7 +15,7 @@ Svendsen Tech.
 Copyright (c) 2015, Joakim Svendsen
 All rights reserved.
 
-BSD 3-clause license. http://www.opensource.org/licenses/BSD-3-Clause
+MIT license. http://www.opensource.org/licenses/MIT
 
 Homepage/documentation:
 http://www.powershelladmin.com/wiki/Port_scan_subnets_with_PSnmap_for_PowerShell
