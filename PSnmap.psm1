@@ -481,8 +481,7 @@ function Invoke-PSipcalc {
     function Convert-IPToBinary
     {
         param(
-            [string] $IP
-        )
+            [string] $IP)
         $IP = $IP.Trim()
         if ($IP -match "\A${IPv4Regex}\z")
         {
@@ -703,7 +702,8 @@ function Invoke-PSipcalc {
             }
             $o.IPEnumerated = $IPRange
         }
-        else {
+        else
+        {
             $o.IPEnumerated = @()
         }
         return $o
