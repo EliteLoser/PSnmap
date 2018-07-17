@@ -15,7 +15,7 @@
 ModuleToProcess = 'PSnmap.psm1' # for v2-compatibility
 
 # Version number of this module.
-ModuleVersion = '1.2'
+ModuleVersion = '1.3'
 
 # ID used to uniquely identify this module
 GUID = '687476b1-c21e-46a0-a2c2-c7fcad73b91c'
@@ -48,7 +48,7 @@ PowerShellVersion = '2.0'
 # CLRVersion = ''
 
 # Processor architecture (None, X86, Amd64) required by this module
-# ProcessorArchitecture = ''
+ProcessorArchitecture = 'Amd64'
 
 # Modules that must be imported into the global environment prior to importing this module
 # RequiredModules = @()
