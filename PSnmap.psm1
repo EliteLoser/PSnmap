@@ -18,7 +18,7 @@ All rights reserved.
 MIT license. http://www.opensource.org/licenses/MIT
 
 Homepage/documentation:
-http://www.powershelladmin.com/wiki/Port_scan_subnets_with_PSnmap_for_PowerShell
+https://www.powershelladmin.com/wiki/Port_scan_subnets_with_PSnmap_for_PowerShell
 
 .PARAMETER ComputerName
 List of CIDR, IP/subnet, IP or DNS/NetBIOS name.
@@ -205,7 +205,7 @@ function Invoke-PSnmap {
             $Result = $IAsyncResult.AsyncWaitHandle.WaitOne($PortConnectTimeout, $true)
             if ($MySock.Connected)
             {
-                $MySock.Close()
+                #$MySock.Close()
                 $MySock.Dispose()
                 $MySock = $Null
                 Write-Verbose "${Computer}: Port $p is OPEN"
@@ -213,7 +213,7 @@ function Invoke-PSnmap {
             }
             else
             {
-                $MySock.Close()
+                #$MySock.Close()
                 $MySock.Dispose()
                 $MySock = $Null
                 Write-Verbose "${Computer}: Port $p is CLOSED"
@@ -725,7 +725,11 @@ function Invoke-PSipcalc {
         }
         return $o
     }
-    $NetworkAddress | ForEach { Get-ProperCIDR -CIDRString $_ } | ForEach { Get-NetworkInformationFromProperCIDR -CIDRObject $_ }
+    $NetworkAddress | ForEach-Object {
+        Get-ProperCIDR -CIDRString $_
+    } | ForEach-Object {
+        Get-NetworkInformationFromProperCIDR -CIDRObject $_
+    }
 }
 New-Alias -Name PSnmap -Value Invoke-PSnmap -Description 'PowerShell nmap' -Scope Global
 New-Alias -Name PSipcalc -Value Invoke-PSipcalc -Description 'PowerShell ipcalc' -Scope Global
