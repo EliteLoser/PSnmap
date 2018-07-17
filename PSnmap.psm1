@@ -646,9 +646,9 @@ function Invoke-PSipcalc {
             Broadcast, UsableHosts, TotalHosts, IPEnumerated, BinaryIP, BinarySubnetMask, BinaryNetworkAddress,
             BinaryBroadcast
         $o.IP = [string] $CIDRObject.IP
-        $o.BinaryIP = Convert-IPToBinary $o.IP
+        $o.BinaryIP = Convert-IPToBinary -IP $o.IP
         $o.NetworkLength = [int32] $CIDRObject.NetworkLength
-        $o.SubnetMask = Convert-BinaryToIP ('1' * $o.NetworkLength).PadRight(32, '0')
+        $o.SubnetMask = Convert-BinaryToIP -Binary ('1' * $o.NetworkLength).PadRight(32, '0')
         $o.BinarySubnetMask = ('1' * $o.NetworkLength).PadRight(32, '0')
         $o.BinaryNetworkAddress = $o.BinaryIP.SubString(0, $o.NetworkLength).PadRight(32, '0')
         if ($Contains)
@@ -675,40 +675,40 @@ function Invoke-PSipcalc {
         }
         #$o.HostMax = Convert-BinaryToIP ([System.Convert]::ToString((([System.Convert]::ToInt64($o.BinaryNetworkAddress.SubString(0, $o.NetworkLength)).PadRight(32, '1'), 2) - 1), 2).PadLeft(32, '0'))
         #$o.HostMax = 
-        [string] $BinaryBroadcastIP = $o.BinaryNetworkAddress.SubString(0, $o.NetworkLength).PadRight(32, '1') # this gives broadcast... need minus one.
+        [String] $BinaryBroadcastIP = $o.BinaryNetworkAddress.SubString(0, $o.NetworkLength).PadRight(32, '1') # this gives broadcast... need minus one.
         $o.BinaryBroadcast = $BinaryBroadcastIP
-        [decimal] $DecimalHostMax = [System.Convert]::ToInt64($BinaryBroadcastIP, 2) - 1
-        [string] $BinaryHostMax = [System.Convert]::ToString($DecimalHostMax, 2).PadLeft(32, '0')
+        [Decimal] $DecimalHostMax = [System.Convert]::ToInt64($BinaryBroadcastIP, 2) - 1
+        [String] $BinaryHostMax = [System.Convert]::ToString($DecimalHostMax, 2).PadLeft(32, '0')
         $o.HostMax = Convert-BinaryToIP -Binary $BinaryHostMax
-        $o.TotalHosts = [decimal][System.Convert]::ToString(([System.Convert]::ToInt64($BinaryBroadcastIP, 2) - [System.Convert]::ToInt64($o.BinaryNetworkAddress, 2) + 1))
+        $o.TotalHosts = [Decimal][System.Convert]::ToString(([System.Convert]::ToInt64($BinaryBroadcastIP, 2) - [System.Convert]::ToInt64($o.BinaryNetworkAddress, 2) + 1))
         $o.UsableHosts = $o.TotalHosts - 2
         # ugh, exceptions for network lengths from 30..32
         if ($o.NetworkLength -eq 32)
         {
             $o.Broadcast = $Null
-            $o.UsableHosts = [decimal] 1
-            $o.TotalHosts = [decimal] 1
+            $o.UsableHosts = [Decimal] 1
+            $o.TotalHosts = [Decimal] 1
             $o.HostMax = $o.IP
         }
         elseif ($o.NetworkLength -eq 31)
         {
             $o.Broadcast = $Null
-            $o.UsableHosts = [decimal] 2
-            $o.TotalHosts = [decimal] 2
+            $o.UsableHosts = [Decimal] 2
+            $o.TotalHosts = [Decimal] 2
             # Override the earlier set value for this (bloody exceptions).
-            [decimal] $DecimalHostMax2 = [System.Convert]::ToInt64($BinaryBroadcastIP, 2) # not minus one here like for the others
-            [string] $BinaryHostMax2 = [System.Convert]::ToString($DecimalHostMax2, 2).PadLeft(32, '0')
-            $o.HostMax = Convert-BinaryToIP $BinaryHostMax2
+            [Decimal] $DecimalHostMax2 = [System.Convert]::ToInt64($BinaryBroadcastIP, 2) # not minus one here like for the others
+            [String] $BinaryHostMax2 = [System.Convert]::ToString($DecimalHostMax2, 2).PadLeft(32, '0')
+            $o.HostMax = Convert-BinaryToIP -Binary $BinaryHostMax2
         }
         elseif ($o.NetworkLength -eq 30)
         {
-            $o.UsableHosts = [decimal] 2
-            $o.TotalHosts = [decimal] 4
-            $o.Broadcast = Convert-BinaryToIP $BinaryBroadcastIP
+            $o.UsableHosts = [Decimal] 2
+            $o.TotalHosts = [Decimal] 4
+            $o.Broadcast = Convert-BinaryToIP -Binary $BinaryBroadcastIP
         }
         else
         {
-            $o.Broadcast = Convert-BinaryToIP $BinaryBroadcastIP
+            $o.Broadcast = Convert-BinaryToIP -Binary $BinaryBroadcastIP
         }
         if ($Enumerate)
         {
