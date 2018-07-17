@@ -6,10 +6,6 @@
 # Generated on: 2015-08-31
 #
 
-# v1.2: Replaced all instances of [int64] with [decimal] to support x86 platforms at no cost. Sorry about that.
-#       ... Except I use ToInt64(), so... yeah.
-# v1.3: Code refactoring.
-
 @{
 
 # Script module or binary module file associated with this manifest.
@@ -17,7 +13,7 @@
 ModuleToProcess = 'PSnmap.psm1' # for v2-compatibility
 
 # Version number of this module.
-ModuleVersion = '1.2'
+ModuleVersion = '1.3'
 
 # ID used to uniquely identify this module
 GUID = '687476b1-c21e-46a0-a2c2-c7fcad73b91c'
@@ -71,7 +67,7 @@ ProcessorArchitecture = 'Amd64'
 # NestedModules = @()
 
 # Functions to export from this module
-FunctionsToExport = '*'
+FunctionsToExport = @('Invoke-PSnmap', 'Invoke-PSipcalc')
 
 # Cmdlets to export from this module
 CmdletsToExport = '*'
