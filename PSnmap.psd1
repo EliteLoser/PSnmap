@@ -29,7 +29,7 @@ Author = 'Joakim Borger Svendsen'
 CompanyName = 'Svendsen Tech'
 
 # Copyright statement for this module
-Copyright = '(c) 2015-2016 Joakim Svendsen. All rights reserved.'
+Copyright = 'Copyright (c) 2015 Joakim Borger Svendsen. Svendsen Tech. All rights reserved.'
 
 # Description of the functionality provided by this module
 Description = 'Linux nmap for PowerShell (almost). Ping sweeps and scans a network for specified open ports. Can also perform DNS lookups.'
