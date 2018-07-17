@@ -566,7 +566,7 @@ function Invoke-PSipcalc {
                 Write-Warning -Message "Invalid subnet mask in CIDR string '$CIDRString'. Subnet mask: '$SubnetMask'."
                 return
             }
-            $o.NetworkLength = [regex]::Matches($BinarySubnetMask, '1').Count
+            $o.NetworkLength = [Regex]::Matches($BinarySubnetMask, '1').Count
         }
         else
         {
@@ -585,11 +585,11 @@ function Invoke-PSipcalc {
     function Get-IPRange
     {
         param(
-            [string] $StartBinary,
-            [string] $EndBinary
+            [String] $StartBinary,
+            [String] $EndBinary
         )
-        [decimal] $StartInt = [System.Convert]::ToInt64($StartBinary, 2)
-        [decimal] $EndInt = [System.Convert]::ToInt64($EndBinary, 2)
+        [Decimal] $StartInt = [System.Convert]::ToInt64($StartBinary, 2)
+        [Decimal] $EndInt = [System.Convert]::ToInt64($EndBinary, 2)
         for ($BinaryIP = $StartInt; $BinaryIP -le $EndInt; $BinaryIP++)
         {
             Convert-BinaryToIP ([System.Convert]::ToString($BinaryIP, 2).PadLeft(32, '0'))
@@ -598,14 +598,14 @@ function Invoke-PSipcalc {
 
     function Test-IPIsInNetwork {
         param(
-            [string] $IP,
-            [string] $StartBinary,
-            [string] $EndBinary
+            [String] $IP,
+            [String] $StartBinary,
+            [String] $EndBinary
         )
         $TestIPBinary = Convert-IPToBinary $IP
-        [decimal] $TestIPInt64 = [System.Convert]::ToInt64($TestIPBinary, 2)
-        [decimal] $StartInt64 = [System.Convert]::ToInt64($StartBinary, 2)
-        [decimal] $EndInt64 = [System.Convert]::ToInt64($EndBinary, 2)
+        [Decimal] $TestIPInt64 = [System.Convert]::ToInt64($TestIPBinary, 2)
+        [Decimal] $StartInt64 = [System.Convert]::ToInt64($StartBinary, 2)
+        [Decimal] $EndInt64 = [System.Convert]::ToInt64($EndBinary, 2)
         if ($TestIPInt64 -ge $StartInt64 -and $TestIPInt64 -le $EndInt64)
         {
             return $True
@@ -619,14 +619,13 @@ function Invoke-PSipcalc {
     function Get-NetworkInformationFromProperCIDR
     {
         param(
-            [psobject] $CIDRObject
-        )
+            [PSObject] $CIDRObject)
         $o = '' | Select-Object -Property IP, NetworkLength, SubnetMask, NetworkAddress, HostMin, HostMax, 
             Broadcast, UsableHosts, TotalHosts, IPEnumerated, BinaryIP, BinarySubnetMask, BinaryNetworkAddress,
             BinaryBroadcast
-        $o.IP = [string] $CIDRObject.IP
+        $o.IP = [String] $CIDRObject.IP
         $o.BinaryIP = Convert-IPToBinary -IP $o.IP
-        $o.NetworkLength = [int32] $CIDRObject.NetworkLength
+        $o.NetworkLength = [Int32] $CIDRObject.NetworkLength
         $o.SubnetMask = Convert-BinaryToIP -Binary ('1' * $o.NetworkLength).PadRight(32, '0')
         $o.BinarySubnetMask = ('1' * $o.NetworkLength).PadRight(32, '0')
         $o.BinaryNetworkAddress = $o.BinaryIP.SubString(0, $o.NetworkLength).PadRight(32, '0')
@@ -691,7 +690,8 @@ function Invoke-PSipcalc {
         }
         if ($Enumerate)
         {
-            $IPRange = @(Get-IPRange $o.BinaryNetworkAddress $o.BinaryNetworkAddress.SubString(0, $o.NetworkLength).PadRight(32, '1'))
+            $IPRange = @(Get-IPRange -StartBinary $o.BinaryNetworkAddress `
+                -EndBinary $o.BinaryNetworkAddress.SubString(0, $o.NetworkLength).PadRight(32, '1'))
             if ((31, 32) -notcontains $o.NetworkLength )
             {
                 $IPRange = $IPRange[1..($IPRange.Count-1)] # remove first element
@@ -712,4 +712,4 @@ function Invoke-PSipcalc {
 }
 New-Alias -Name PSnmap -Value Invoke-PSnmap -Description 'PowerShell nmap' -Scope Global
 New-Alias -Name PSipcalc -Value Invoke-PSipcalc -Description 'PowerShell ipcalc' -Scope Global
-Export-ModuleMember -Function Invoke-PSnmap, Invoke-PSipcalc
+#Export-ModuleMember -Function Invoke-PSnmap, Invoke-PSipcalc # now handled in manifest
