@@ -634,7 +634,9 @@ function Invoke-PSipcalc {
             if ($Contains -match "\A${IPv4Regex}\z")
             {
                 # Passing in IP to test, start binary and end binary.
-                return Test-IPIsInNetwork $Contains $o.BinaryNetworkAddress $o.BinaryNetworkAddress.SubString(0, $o.NetworkLength).PadRight(32, '1')
+                return Test-IPIsInNetwork -IP $Contains `
+                    -StartBinary $o.BinaryNetworkAddress `
+                    -EndBinary $o.BinaryNetworkAddress.SubString(0, $o.NetworkLength).PadRight(32, '1')
             }
             else
             {
@@ -658,7 +660,9 @@ function Invoke-PSipcalc {
         [Decimal] $DecimalHostMax = [System.Convert]::ToInt64($BinaryBroadcastIP, 2) - 1
         [String] $BinaryHostMax = [System.Convert]::ToString($DecimalHostMax, 2).PadLeft(32, '0')
         $o.HostMax = Convert-BinaryToIP -Binary $BinaryHostMax
-        $o.TotalHosts = [Decimal][System.Convert]::ToString(([System.Convert]::ToInt64($BinaryBroadcastIP, 2) - [System.Convert]::ToInt64($o.BinaryNetworkAddress, 2) + 1))
+        $o.TotalHosts = [Decimal][System.Convert]::ToString(
+            ([System.Convert]::ToInt64($BinaryBroadcastIP, 2) - [System.Convert]::ToInt64($o.BinaryNetworkAddress, 2) + 1)
+        )
         $o.UsableHosts = $o.TotalHosts - 2
         # ugh, exceptions for network lengths from 30..32
         if ($o.NetworkLength -eq 32)
