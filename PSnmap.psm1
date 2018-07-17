@@ -12,8 +12,7 @@ If you get over about 20-25,000 threads, you'll experience significant slowdowns
 towards the end, so avoiding that is recommended. This number may vary in your environment.
 
 Svendsen Tech.
-Copyright (c) 2015, Joakim Svendsen
-All rights reserved.
+Copyright (c) 2015, Joakim Borger Svendsen. All rights reserved.
 
 MIT license. http://www.opensource.org/licenses/MIT
 
@@ -103,8 +102,7 @@ function Invoke-PSnmap {
         # Port connect timeout in milliseconds. 5000 as a default seems sane.
         [int] $PortConnectTimeoutMs = 5000,
         # Do not display the end summary with start and end time, using Write-Host.
-        [switch] $NoSummary
-    )
+        [switch] $NoSummary)
     
     # PowerShell nmap-ish clone for Windows.
     # Copyright (c) 2015, Svendsen Tech, All rights reserved.
@@ -137,8 +135,14 @@ function Invoke-PSnmap {
     $RunspaceCounter = 0
     Write-Verbose -Message 'Creating initial session state.'
     $ISS = [System.Management.Automation.Runspaces.InitialSessionState]::CreateDefault()
-    $ISS.Variables.Add((New-Object -TypeName System.Management.Automation.Runspaces.SessionStateVariableEntry -ArgumentList 'RunspaceTimers', $RunspaceTimers, ''))
-    $ISS.Variables.Add((New-Object -TypeName System.Management.Automation.Runspaces.SessionStateVariableEntry -ArgumentList 'PortData', $PortData, ''))
+    $ISS.Variables.Add(
+        (New-Object -TypeName System.Management.Automation.Runspaces.SessionStateVariableEntry `
+        -ArgumentList 'RunspaceTimers', $RunspaceTimers, '')
+    )
+    $ISS.Variables.Add(
+        (New-Object -TypeName System.Management.Automation.Runspaces.SessionStateVariableEntry `
+        -ArgumentList 'PortData', $PortData, '')
+    )
     Write-Verbose -Message 'Creating runspace pool.'
     $RunspacePool = [System.Management.Automation.Runspaces.RunspaceFactory]::CreateRunspacePool(1, $ThrottleLimit, $ISS, $Host)
     $RunspacePool.ApartmentState = 'STA'
@@ -205,7 +209,6 @@ function Invoke-PSnmap {
             $Result = $IAsyncResult.AsyncWaitHandle.WaitOne($PortConnectTimeout, $true)
             if ($MySock.Connected)
             {
-                #$MySock.Close()
                 $MySock.Dispose()
                 $MySock = $Null
                 Write-Verbose "${Computer}: Port $p is OPEN"
@@ -213,38 +216,12 @@ function Invoke-PSnmap {
             }
             else
             {
-                #$MySock.Close()
                 $MySock.Dispose()
                 $MySock = $Null
                 Write-Verbose "${Computer}: Port $p is CLOSED"
                 $PortData[$Computer] | Add-Member -MemberType NoteProperty -Name "Port $p" -Value $False
             }
-            <#$MySocket = $Null
-            $MySocket = New-Object Net.Sockets.TcpClient
-            # Suppress error messages
-            $ErrorActionPreference = 'SilentlyContinue'
-            # Try to connect
-            $MySocket.Connect($Computer, $p)
-            # Make error messages visible again
-            $ErrorActionPreference = 'Continue'
-            if ($MySocket.Connected) {
-                $MySocket.Close()
-                $MySocket.Dispose()
-                $MySocket = $Null
-                Write-Verbose "${Computer}: Port $p is OPEN"
-                $PortData[$Computer] | Add-Member -MemberType NoteProperty -Name "Port $p" -Value $True
-            }
-            else
-            {
-                $MySocket.Close()
-                $MySocket.Dispose()
-                $MySocket = $Null
-                Write-Verbose "${Computer}: Port $p is CLOSED"
-                $PortData[$Computer] | Add-Member -MemberType NoteProperty -Name "Port $p" -Value $False
-            }#>
         }
-        # Emit object to pipeline!
-        #$o
     } # end of script block that's run for each host/port/DNS
     
     function Get-Result
@@ -315,21 +292,23 @@ function Invoke-PSnmap {
         {
             $PortData[$ComputerName] = New-Object -TypeName PSObject -Property @{ Ping = $Null }
         }
-        $PortData[$ComputerName] | Add-Member -MemberType NoteProperty -Name Ping -Value (Test-Connection -ComputerName $ComputerName -Quiet -Count 1) -Force
+        $PortData[$ComputerName] | Add-Member -MemberType NoteProperty `
+            -Name Ping -Value (Test-Connection -ComputerName $ComputerName -Quiet -Count 1) -Force
     }
 
-    $AllComputerName = @()
-    foreach ($Computer in $ComputerName)
-    {
-        if ($Computer -match "\A(?:${IPv4Regex}/\d{1,2}|${IPv4Regex}[\s/]+$IPv4Regex)\z")
+    $AllComputerName = @(
+        foreach ($Computer in $ComputerName)
         {
-            Write-Verbose -Message "Detected CIDR notation or IP/subnet: '$Computer'. Expanding ..."
-            $AllComputerName += @((Invoke-PSipcalc -NetworkAddress $Computer -Enumerate).IPEnumerated)
+            if ($Computer -match "\A(?:${IPv4Regex}/\d{1,2}|${IPv4Regex}[\s/]+$IPv4Regex)\z")
+            {
+                Write-Verbose -Message "Detected CIDR notation or IP/subnet: '$Computer'. Expanding ..."
+                (Invoke-PSipcalc -NetworkAddress $Computer -Enumerate).IPEnumerated
+            }
+            else {
+                $Computer
+            }
         }
-        else {
-            $AllComputerName += $Computer
-        }
-    }
+    )
     # Do a ping scan using the same thread engine as later, but don't run Get-Result.
     # We sort of need some type of feedback even without Write-Verbose at this step...
     # Abandoned support for pipeline input (I'm guessing "who cares" about that 99 % of the time with this script).
