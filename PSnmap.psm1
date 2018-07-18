@@ -20,23 +20,26 @@ Homepage/documentation:
 https://www.powershelladmin.com/wiki/Port_scan_subnets_with_PSnmap_for_PowerShell
 
 .PARAMETER ComputerName
-List of CIDR, IP/subnet, IP or DNS/NetBIOS name.
+    List of CIDR, IP/subnet, IP or DNS/NetBIOS name.
 .PARAMETER PORT
-Port or ports to check.
+    Port or ports to check.
 .PARAMETER Dns
-Perform a DNS lookup.
+    Perform a DNS lookup.
 .PARAMETER ScanOnPingFail
-Scan all hosts even if ping fails.
+    Scan all hosts even if ping fails.
 .PARAMETER ThrottleLimit
-Number of concurrent threads. Default: 32.
+    Number of concurrent threads. Default: 32.
 .PARAMETER HideProgress
-Do not display progress with Write-Progress
+    Do not display progress with Write-Progress
 .PARAMETER Timeout
-Timeout in seconds for each thread. Causes problems if too short. 30 as a default seems OK.
+    Timeout in seconds for each thread. Causes problems if too short. 30 as a default seems OK.
 .PARAMETER PortConnectTimeoutMs
-Port connect timeout in milliseconds. 5 seconds as a default for LAN scans. Increase for mobile/slow WAN.
+    Port connect timeout in milliseconds. 5 seconds as a default for LAN scans. Increase for mobile/slow WAN.
 .PARAMETER NoSummary
-Do not display the end summary with start and end time, using Write-Host.
+    Do not display the end summary with start and end time, using Write-Host.
+.PARAMETER AddService
+    Add the IANA (https://iana.org) service port number name, in parentheses after
+    the port number.
 
 .EXAMPLE
 $x = PSnmap -Cn 192.168.1.1/24, synology, ubuntuvm, vista64esxi -Port 22,3389,80,443 -Dns #-Verbose
