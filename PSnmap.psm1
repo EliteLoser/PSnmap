@@ -18,6 +18,7 @@ MIT license. http://www.opensource.org/licenses/MIT
 
 Homepage/documentation:
 https://www.powershelladmin.com/wiki/Port_scan_subnets_with_PSnmap_for_PowerShell
+https://github.com/EliteLoser/PSnmap
 
 .PARAMETER ComputerName
     List of CIDR, IP/subnet, IP or DNS/NetBIOS name.
