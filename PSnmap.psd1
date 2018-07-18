@@ -10,9 +10,10 @@
 
 # Script module or binary module file associated with this manifest.
 # RootModule = ''
+ModuleToProcess = "PSnmap.psm1"
 
 # Version number of this module.
-ModuleVersion = '1.3'
+ModuleVersion = '1.3.1'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -110,7 +111,8 @@ PrivateData = @{
         ReleaseNotes = '* Code refactoring.
 * Readability.
 * Added the -AddService parameter using an IANA services port number CSV file.
-* Conforming more to standards. PSScriptAnalyzer standardization.'
+* Conforming more to standards. PSScriptAnalyzer standardization.
+* Unbreak 1.3 module in 1.3.1.'
 
         # External dependent modules of this module
         # ExternalModuleDependencies = ''
