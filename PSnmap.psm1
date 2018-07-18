@@ -106,6 +106,7 @@ function Invoke-PSnmap {
         [int] $PortConnectTimeoutMs = 5000,
         # Do not display the end summary with start and end time, using Write-Host.
         [Switch] $NoSummary,
+        # Add IANA service for the port number in parentheses.
         [Switch] $AddService)
         #[Switch] $UpdateServicesFromIANA)
     
