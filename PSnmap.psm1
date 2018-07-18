@@ -86,23 +86,28 @@ function Invoke-PSnmap {
     [CmdletBinding()]
     param(
         # CIDR, IP/subnet, IP, or DNS/NetBIOS name.
-        [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][Alias('PSComputerName', 'Cn')][string[]] $ComputerName,
+        [Parameter(Mandatory=$true)]
+            [ValidateNotNullOrEmpty()]
+            [Alias('PSComputerName', 'Cn')]
+            [String[]] $ComputerName,
         # Port or ports to check.
-        [int[]] $Port,
+        [Int[]] $Port,
         # Perform a DNS lookup.
-        [switch] $Dns,
+        [Switch] $Dns,
         # Scan all hosts even if ping fails.
-        [switch] $ScanOnPingFail,
+        [Switch] $ScanOnPingFail,
         # Number of concurrent threads.
-        [int] $ThrottleLimit = 32,
+        [Int] $ThrottleLimit = 32,
         # Do not display progress with Write-Progress.
-        [switch] $HideProgress,
+        [Switch] $HideProgress,
         # Timeout in seconds. Causes problems if too short. 30 as a default seems OK.
-        [int] $Timeout = 30,
+        [Int] $Timeout = 30,
         # Port connect timeout in milliseconds. 5000 as a default seems sane.
         [int] $PortConnectTimeoutMs = 5000,
         # Do not display the end summary with start and end time, using Write-Host.
-        [switch] $NoSummary)
+        [Switch] $NoSummary,
+        [Switch] $AddService)
+        #[Switch] $UpdateServicesFromIANA)
     
     # PowerShell nmap-ish clone for Windows.
     # Copyright (c) 2015, Svendsen Tech, All rights reserved.
@@ -119,20 +124,34 @@ function Invoke-PSnmap {
     # reported as closed on one scan, open on the next).
     # Changed so multiple IPs or DNS names are in an array rather than a semicolon-joined string.
     
-    # 2017-06-08: Changed all instances of [int64] to [decimal] so I support x86 platforms at no cost ... Sorry about that.
-    
     Set-StrictMode -Version Latest
-    $MyEAP = 'Stop'
+    $MyEAP = "Stop"
     $ErrorActionPreference = $MyEAP
     $StartTime = Get-Date
-    #$MyScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Definition
-    #Write-Verbose -Message "Creating script-scoped PSipcalc alias."
-    #New-Alias -Name Invoke-PSipcalc -Scope Script -Value (Join-Path $MyScriptRoot $PSipcalc)
-    $IPv4Regex = '(?:(?:0?0?\d|0?[1-9]\d|1\d\d|2[0-5][0-5]|2[0-4]\d)\.){3}(?:0?0?\d|0?[1-9]\d|1\d\d|2[0-5][0-5]|2[0-4]\d)'
+    
+    if ($AddService -and $PSVersionTable.PSVersion.Major -eq 2) {
+        $MyScriptRoot = Split-Path -Path $MyInvocation.MyCommand.Path -Parent
+    }
+    elseif ($AddService) {
+        $MyScriptRoot = $PSScriptRoot
+    }
+    # https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.csv
+    $IANAServicesFile = "$MyScriptRoot\service-names-port-numbers.csv"
+    
+    # Populate services hash for quick lookup later.
+    if ($AddService) {
+        $PortServiceHash = @{} # string types as keys are best, which we will get for the ports from ipcsv..
+        foreach ($Entry in Import-Csv -LiteralPath $IANAServicesFile | Where-Object { $_."Transport Protocol" -eq "tcp" }) {
+            $PortServiceHash[$Entry."Port Number"] = $Entry."Service Name"
+        }
+    }
+    $IPv4Regex = "(?:(?:0?0?\d|0?[1-9]\d|1\d\d|2[0-5][0-5]|2[0-4]\d)\.){3}(?:0?0?\d|0?[1-9]\d|1\d\d|2[0-5][0-5]|2[0-4]\d)"
+    
     $RunspaceTimers = [HashTable]::Synchronized(@{})
     $PortData = [HashTable]::Synchronized(@{})
     $Runspaces = New-Object -TypeName System.Collections.ArrayList
     $RunspaceCounter = 0
+    
     Write-Verbose -Message 'Creating initial session state.'
     $ISS = [System.Management.Automation.Runspaces.InitialSessionState]::CreateDefault()
     $ISS.Variables.Add(
@@ -143,7 +162,9 @@ function Invoke-PSnmap {
         (New-Object -TypeName System.Management.Automation.Runspaces.SessionStateVariableEntry `
         -ArgumentList 'PortData', $PortData, '')
     )
+    
     Write-Verbose -Message 'Creating runspace pool.'
+    
     $RunspacePool = [System.Management.Automation.Runspaces.RunspaceFactory]::CreateRunspacePool(1, $ThrottleLimit, $ISS, $Host)
     $RunspacePool.ApartmentState = 'STA'
     $RunspacePool.Open()
@@ -409,23 +430,43 @@ function Invoke-PSnmap {
     Write-Verbose -Message "Closing runspace pool."
     $RunspacePool.Close()
     $RunspacePool.Dispose()
-    [hashtable[]] $Script:TestPortProperties = @{ Name = 'ComputerName'; Expression = { $_.Name } }
+    [HashTable[]] $Script:TestPortProperties = @{ Name = 'ComputerName'; Expression = { $_.Name } }
     if ($Dns)
     {
         $Script:TestPortProperties += @{ Name = 'IP/DNS'; Expression = { $_.Value.'IP/DNS' } }
     }
     $Script:TestPortProperties += @{ Name = 'Ping'; Expression = { $_.Value.Ping } }
+    #if (-not $NoServices) {
+    #    foreach ($p in $Port) {
+    #        $Script:TestPortProperties += @{ Name = "Service"; Expression = { $PortServiceHash[$p] } }
+    #    }
+    #}
     #$Script:TestPortProperties += @($Port | ForEach-Object { @{ Name = "Port $_"; Expression = { $_."Port $_" } } })
     foreach ($p in $Port | Sort-Object)
     {
-        $Script:TestPortProperties += @{ Name = "Port $p"; Expression = [ScriptBlock]::Create("`$_.Value.'Port $p'") }
+        $Script:TestPortProperties += @{
+            Name = "Port $p$(
+                if ($AddService) {
+                    "" ("" + $PortServiceHash[[String] $p] + "")""
+                }
+            )";
+            Expression = [ScriptBlock]::Create("`$_.Value.'Port $p'") }
     }
     $PortData.GetEnumerator() |
-        Sort-Object -Property @{ Expression ={ if ($_.Name -match "\A$IPv4Regex\z") { ($_.Name.Split('.') | ForEach-Object { '{0:D3}' -f [int] $_ }) -join '.' } else { $_.Name } } } |
+        Sort-Object -Property @{ # sort IPs for humans
+            Expression = { if ($_.Name -match "\A$IPv4Regex\z") {
+                ($_.Name.Split('.') | ForEach-Object {
+                    '{0:D3}' -f [int] $_
+                }) -join '.'
+                } else {
+                    $_.Name
+                }
+            }
+        } |
         Select-Object -Property $Script:TestPortProperties
     Write-Verbose -Message '"Exporting" $Global:STTestPortData and $Global:STTestPortDataProperties'
-    $Global:STTestPortData = $PortData
-    $Global:STTestPortDataProperties = $Script:TestPortProperties
+    #$Global:STTestPortData = $PortData
+    #$Global:STTestPortDataProperties = $Script:TestPortProperties
     if (-not $NoSummary)
     {
         Write-Host -ForegroundColor Green ('Start time: ' + $StartTime)
@@ -481,7 +522,7 @@ function Invoke-PSipcalc {
     function Convert-IPToBinary
     {
         param(
-            [string] $IP)
+            [String] $IP)
         $IP = $IP.Trim()
         if ($IP -match "\A${IPv4Regex}\z")
         {
@@ -714,6 +755,9 @@ function Invoke-PSipcalc {
         Get-NetworkInformationFromProperCIDR -CIDRObject $_
     }
 }
-New-Alias -Name PSnmap -Value Invoke-PSnmap -Description 'PowerShell nmap' -Scope Global
-New-Alias -Name PSipcalc -Value Invoke-PSipcalc -Description 'PowerShell ipcalc' -Scope Global
+New-Alias -Name PSnmap -Value Invoke-PSnmap -Description 'PowerShell nmap' `
+    -Scope Global -ErrorAction SilentlyContinue
+New-Alias -Name PSipcalc -Value Invoke-PSipcalc -Description 'PowerShell ipcalc' `
+    -Scope Global -ErrorAction SilentlyContinue
+
 #Export-ModuleMember -Function Invoke-PSnmap, Invoke-PSipcalc # now handled in manifest
