@@ -379,24 +379,26 @@ function Invoke-PSnmap {
         $IterComputerName = $PortData.Keys
     }
     else {
-        $IterComputerName = $PortData.GetEnumerator() | Where-Object { $_.Value.Ping -eq $True } | Select-Object -ExpandProperty Name
+        $IterComputerName = $PortData.GetEnumerator() |
+            Where-Object { $_.Value.Ping -eq $True } |
+            Select-Object -ExpandProperty Name
     }
     foreach ($Computer in $IterComputerName)
     {
         # Starting DNS thread if switch was specified.
         if ($PSBoundParameters['Dns']) {
             ++$RunspaceCounter
-            $psCMD = [System.Management.Automation.PowerShell]::Create().AddScript($ScriptBlock)
-            [void] $psCMD.AddParameter('ID', $RunspaceCounter)
-            [void] $psCMD.AddParameter('Computer', $Computer)
+            $PSCMD = [System.Management.Automation.PowerShell]::Create().AddScript($ScriptBlock)
+            [void] $PSCMD.AddParameter('ID', $RunspaceCounter)
+            [void] $PSCMD.AddParameter('Computer', $Computer)
             [void] $PSCMD.AddParameter('Port', $Null)
             [void] $PSCMD.AddParameter('Dns', $Dns)
-            [void] $psCMD.AddParameter('Verbose', $VerbosePreference)
-            $psCMD.RunspacePool = $RunspacePool
+            [void] $PSCMD.AddParameter('Verbose', $VerbosePreference)
+            $PSCMD.RunspacePool = $RunspacePool
             Write-Verbose -Message "Starting $Computer DNS thread"
             [void]$Runspaces.Add(@{
-                Handle = $psCMD.BeginInvoke()
-                PowerShell = $psCMD
+                Handle = $PSCMD.BeginInvoke()
+                PowerShell = $PSCMD
                 IObject = $Computer
                 ID = $RunspaceCounter
             })
