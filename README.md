@@ -9,7 +9,7 @@ The module is in the PowerShell gallery, so with the proper environment (set up 
 
 # Screenshot Example
 
-![alt_tag](/img/pnmap-example-with-services-attached.png)
+![alt tag](/img/pnmap-example-with-services-attached.png)
 
 Svendsen Tech. Joakim Borger Svendsen.
 
