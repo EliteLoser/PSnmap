@@ -5,7 +5,7 @@ Online blog documentation: https://www.powershelladmin.com/wiki/Port_scan_subnet
 
 The module is in the PowerShell gallery, so with the proper environment (set up by default in PSv5 and up) you can install for your user only (elevation not required) with this command:
 
-`Install-Module -Name PSnmap -Scope CurrentUser`
+`Install-Module -Name PSnmap -Scope CurrentUser #-Force`
 
 # Screenshot Example
 
