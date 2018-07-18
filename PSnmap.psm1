@@ -12,13 +12,12 @@ If you get over about 20-25,000 threads, you'll experience significant slowdowns
 towards the end, so avoiding that is recommended. This number may vary in your environment.
 
 Svendsen Tech.
-Copyright (c) 2015, Joakim Svendsen
-All rights reserved.
+Copyright (c) 2015, Joakim Borger Svendsen. All rights reserved.
 
 MIT license. http://www.opensource.org/licenses/MIT
 
 Homepage/documentation:
-http://www.powershelladmin.com/wiki/Port_scan_subnets_with_PSnmap_for_PowerShell
+https://www.powershelladmin.com/wiki/Port_scan_subnets_with_PSnmap_for_PowerShell
 
 .PARAMETER ComputerName
 List of CIDR, IP/subnet, IP or DNS/NetBIOS name.
@@ -87,24 +86,29 @@ function Invoke-PSnmap {
     [CmdletBinding()]
     param(
         # CIDR, IP/subnet, IP, or DNS/NetBIOS name.
-        [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][Alias('PSComputerName', 'Cn')][string[]] $ComputerName,
+        [Parameter(Mandatory=$true)]
+            [ValidateNotNullOrEmpty()]
+            [Alias('PSComputerName', 'Cn')]
+            [String[]] $ComputerName,
         # Port or ports to check.
-        [int[]] $Port,
+        [Int[]] $Port,
         # Perform a DNS lookup.
-        [switch] $Dns,
+        [Switch] $Dns,
         # Scan all hosts even if ping fails.
-        [switch] $ScanOnPingFail,
+        [Switch] $ScanOnPingFail,
         # Number of concurrent threads.
-        [int] $ThrottleLimit = 32,
+        [Int] $ThrottleLimit = 32,
         # Do not display progress with Write-Progress.
-        [switch] $HideProgress,
+        [Switch] $HideProgress,
         # Timeout in seconds. Causes problems if too short. 30 as a default seems OK.
-        [int] $Timeout = 30,
+        [Int] $Timeout = 30,
         # Port connect timeout in milliseconds. 5000 as a default seems sane.
         [int] $PortConnectTimeoutMs = 5000,
         # Do not display the end summary with start and end time, using Write-Host.
-        [switch] $NoSummary
-    )
+        [Switch] $NoSummary,
+        # Add IANA service for the port number in parentheses.
+        [Switch] $AddService)
+        #[Switch] $UpdateServicesFromIANA)
     
     # PowerShell nmap-ish clone for Windows.
     # Copyright (c) 2015, Svendsen Tech, All rights reserved.
@@ -121,25 +125,46 @@ function Invoke-PSnmap {
     # reported as closed on one scan, open on the next).
     # Changed so multiple IPs or DNS names are in an array rather than a semicolon-joined string.
     
-    # 2017-06-08: Changed all instances of [int64] to [decimal] so I support x86 platforms at no cost ... Sorry about that.
-    
     Set-StrictMode -Version Latest
-    $MyEAP = 'Stop'
+    $MyEAP = "Stop"
     $ErrorActionPreference = $MyEAP
     $StartTime = Get-Date
-    #$MyScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Definition
-    #Write-Verbose -Message "Creating script-scoped PSipcalc alias."
-    #New-Alias -Name Invoke-PSipcalc -Scope Script -Value (Join-Path $MyScriptRoot $PSipcalc)
-    $IPv4Regex = '(?:(?:0?0?\d|0?[1-9]\d|1\d\d|2[0-5][0-5]|2[0-4]\d)\.){3}(?:0?0?\d|0?[1-9]\d|1\d\d|2[0-5][0-5]|2[0-4]\d)'
+    
+    if ($AddService) {
+        if ($PSVersionTable.PSVersion.Major -eq 2) {
+            $MyScriptRoot = Split-Path -Path $MyInvocation.MyCommand.Path -Parent
+        }
+        $MyScriptRoot = $PSScriptRoot
+        # https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.csv
+        $IANAServicesFile = "$MyScriptRoot\service-names-port-numbers.csv"
+    }
+    # Populate services hash for quick lookup later.
+    if ($AddService) {
+        $PortServiceHash = @{} # string types as keys are best, which we will get for the ports from ipcsv..
+        foreach ($Entry in Import-Csv -LiteralPath $IANAServicesFile | Where-Object { $_."Transport Protocol" -eq "tcp" }) {
+            $PortServiceHash[$Entry."Port Number"] = $Entry."Service Name"
+        }
+    }
+    $IPv4Regex = "(?:(?:0?0?\d|0?[1-9]\d|1\d\d|2[0-5][0-5]|2[0-4]\d)\.){3}(?:0?0?\d|0?[1-9]\d|1\d\d|2[0-5][0-5]|2[0-4]\d)"
+    
     $RunspaceTimers = [HashTable]::Synchronized(@{})
     $PortData = [HashTable]::Synchronized(@{})
     $Runspaces = New-Object -TypeName System.Collections.ArrayList
     $RunspaceCounter = 0
+    
     Write-Verbose -Message 'Creating initial session state.'
     $ISS = [System.Management.Automation.Runspaces.InitialSessionState]::CreateDefault()
-    $ISS.Variables.Add((New-Object -TypeName System.Management.Automation.Runspaces.SessionStateVariableEntry -ArgumentList 'RunspaceTimers', $RunspaceTimers, ''))
-    $ISS.Variables.Add((New-Object -TypeName System.Management.Automation.Runspaces.SessionStateVariableEntry -ArgumentList 'PortData', $PortData, ''))
+    $ISS.Variables.Add(
+        (New-Object -TypeName System.Management.Automation.Runspaces.SessionStateVariableEntry `
+        -ArgumentList 'RunspaceTimers', $RunspaceTimers, '')
+    )
+    $ISS.Variables.Add(
+        (New-Object -TypeName System.Management.Automation.Runspaces.SessionStateVariableEntry `
+        -ArgumentList 'PortData', $PortData, '')
+    )
+    
     Write-Verbose -Message 'Creating runspace pool.'
+    
     $RunspacePool = [System.Management.Automation.Runspaces.RunspaceFactory]::CreateRunspacePool(1, $ThrottleLimit, $ISS, $Host)
     $RunspacePool.ApartmentState = 'STA'
     $RunspacePool.Open()
@@ -184,7 +209,8 @@ function Invoke-PSnmap {
                 # Both IPv6 and IPv4 may be reported depending on your environment.
                 if ($HostEntry.HostName.Split('.')[0] -ieq $Computer.Split('.')[0])
                 {
-                    $IPDns = @($HostEntry | Select -Expand AddressList | Select -Expand IPAddressToString)
+                    $IPDns = @($HostEntry | Select-Object -Expand AddressList |
+                        Select-Object -Expand IPAddressToString)
                 }
                 else
                 {
@@ -205,7 +231,6 @@ function Invoke-PSnmap {
             $Result = $IAsyncResult.AsyncWaitHandle.WaitOne($PortConnectTimeout, $true)
             if ($MySock.Connected)
             {
-                $MySock.Close()
                 $MySock.Dispose()
                 $MySock = $Null
                 Write-Verbose "${Computer}: Port $p is OPEN"
@@ -213,38 +238,12 @@ function Invoke-PSnmap {
             }
             else
             {
-                $MySock.Close()
                 $MySock.Dispose()
                 $MySock = $Null
                 Write-Verbose "${Computer}: Port $p is CLOSED"
                 $PortData[$Computer] | Add-Member -MemberType NoteProperty -Name "Port $p" -Value $False
             }
-            <#$MySocket = $Null
-            $MySocket = New-Object Net.Sockets.TcpClient
-            # Suppress error messages
-            $ErrorActionPreference = 'SilentlyContinue'
-            # Try to connect
-            $MySocket.Connect($Computer, $p)
-            # Make error messages visible again
-            $ErrorActionPreference = 'Continue'
-            if ($MySocket.Connected) {
-                $MySocket.Close()
-                $MySocket.Dispose()
-                $MySocket = $Null
-                Write-Verbose "${Computer}: Port $p is OPEN"
-                $PortData[$Computer] | Add-Member -MemberType NoteProperty -Name "Port $p" -Value $True
-            }
-            else
-            {
-                $MySocket.Close()
-                $MySocket.Dispose()
-                $MySocket = $Null
-                Write-Verbose "${Computer}: Port $p is CLOSED"
-                $PortData[$Computer] | Add-Member -MemberType NoteProperty -Name "Port $p" -Value $False
-            }#>
         }
-        # Emit object to pipeline!
-        #$o
     } # end of script block that's run for each host/port/DNS
     
     function Get-Result
@@ -266,7 +265,7 @@ function Invoke-PSnmap {
                     $Runspace.PowerShell = $null
                     $Runspace.Handle = $null
                 }
-                elseif ($Runspace.Handle -ne $null)
+                elseif ($null -ne $Runspace.Handle)
                 {
                     $More = $true
                 }
@@ -315,21 +314,23 @@ function Invoke-PSnmap {
         {
             $PortData[$ComputerName] = New-Object -TypeName PSObject -Property @{ Ping = $Null }
         }
-        $PortData[$ComputerName] | Add-Member -MemberType NoteProperty -Name Ping -Value (Test-Connection -ComputerName $ComputerName -Quiet -Count 1) -Force
+        $PortData[$ComputerName] | Add-Member -MemberType NoteProperty `
+            -Name Ping -Value (Test-Connection -ComputerName $ComputerName -Quiet -Count 1) -Force
     }
 
-    $AllComputerName = @()
-    foreach ($Computer in $ComputerName)
-    {
-        if ($Computer -match "\A(?:${IPv4Regex}/\d{1,2}|${IPv4Regex}[\s/]+$IPv4Regex)\z")
+    $AllComputerName = @(
+        foreach ($Computer in $ComputerName)
         {
-            Write-Verbose -Message "Detected CIDR notation or IP/subnet: '$Computer'. Expanding ..."
-            $AllComputerName += @((Invoke-PSipcalc -NetworkAddress $Computer -Enumerate).IPEnumerated)
+            if ($Computer -match "\A(?:${IPv4Regex}/\d{1,2}|${IPv4Regex}[\s/]+$IPv4Regex)\z")
+            {
+                Write-Verbose -Message "Detected CIDR notation or IP/subnet: '$Computer'. Expanding ..."
+                (Invoke-PSipcalc -NetworkAddress $Computer -Enumerate).IPEnumerated
+            }
+            else {
+                $Computer
+            }
         }
-        else {
-            $AllComputerName += $Computer
-        }
-    }
+    )
     # Do a ping scan using the same thread engine as later, but don't run Get-Result.
     # We sort of need some type of feedback even without Write-Verbose at this step...
     # Abandoned support for pipeline input (I'm guessing "who cares" about that 99 % of the time with this script).
@@ -430,23 +431,43 @@ function Invoke-PSnmap {
     Write-Verbose -Message "Closing runspace pool."
     $RunspacePool.Close()
     $RunspacePool.Dispose()
-    [hashtable[]] $Script:TestPortProperties = @{ Name = 'ComputerName'; Expression = { $_.Name } }
+    [HashTable[]] $Script:TestPortProperties = @{ Name = 'ComputerName'; Expression = { $_.Name } }
     if ($Dns)
     {
         $Script:TestPortProperties += @{ Name = 'IP/DNS'; Expression = { $_.Value.'IP/DNS' } }
     }
     $Script:TestPortProperties += @{ Name = 'Ping'; Expression = { $_.Value.Ping } }
+    #if (-not $NoServices) {
+    #    foreach ($p in $Port) {
+    #        $Script:TestPortProperties += @{ Name = "Service"; Expression = { $PortServiceHash[$p] } }
+    #    }
+    #}
     #$Script:TestPortProperties += @($Port | ForEach-Object { @{ Name = "Port $_"; Expression = { $_."Port $_" } } })
     foreach ($p in $Port | Sort-Object)
     {
-        $Script:TestPortProperties += @{ Name = "Port $p"; Expression = [ScriptBlock]::Create("`$_.Value.'Port $p'") }
+        $Script:TestPortProperties += @{
+            Name = "Port $p$(
+                if ($AddService) {
+                    "" ("" + $PortServiceHash[[String] $p] + "")""
+                }
+            )";
+            Expression = [ScriptBlock]::Create("`$_.Value.'Port $p'") }
     }
     $PortData.GetEnumerator() |
-        Sort-Object -Property @{ Expression ={ if ($_.Name -match "\A$IPv4Regex\z") { ($_.Name.Split('.') | ForEach-Object { '{0:D3}' -f [int] $_ }) -join '.' } else { $_.Name } } } |
+        Sort-Object -Property @{ # sort IPs for humans
+            Expression = { if ($_.Name -match "\A$IPv4Regex\z") {
+                ($_.Name.Split('.') | ForEach-Object {
+                    '{0:D3}' -f [int] $_
+                }) -join '.'
+                } else {
+                    $_.Name
+                }
+            }
+        } |
         Select-Object -Property $Script:TestPortProperties
-    Write-Verbose -Message '"Exporting" $Global:STTestPortData and $Global:STTestPortDataProperties'
-    $Global:STTestPortData = $PortData
-    $Global:STTestPortDataProperties = $Script:TestPortProperties
+    #Write-Verbose -Message '"Exporting" $Global:STTestPortData and $Global:STTestPortDataProperties'
+    #$Global:STTestPortData = $PortData
+    #$Global:STTestPortDataProperties = $Script:TestPortProperties
     if (-not $NoSummary)
     {
         Write-Host -ForegroundColor Green ('Start time: ' + $StartTime)
@@ -502,8 +523,7 @@ function Invoke-PSipcalc {
     function Convert-IPToBinary
     {
         param(
-            [string] $IP
-        )
+            [String] $IP)
         $IP = $IP.Trim()
         if ($IP -match "\A${IPv4Regex}\z")
         {
@@ -587,7 +607,7 @@ function Invoke-PSipcalc {
                 Write-Warning -Message "Invalid subnet mask in CIDR string '$CIDRString'. Subnet mask: '$SubnetMask'."
                 return
             }
-            $o.NetworkLength = [regex]::Matches($BinarySubnetMask, '1').Count
+            $o.NetworkLength = [Regex]::Matches($BinarySubnetMask, '1').Count
         }
         else
         {
@@ -606,11 +626,11 @@ function Invoke-PSipcalc {
     function Get-IPRange
     {
         param(
-            [string] $StartBinary,
-            [string] $EndBinary
+            [String] $StartBinary,
+            [String] $EndBinary
         )
-        [decimal] $StartInt = [System.Convert]::ToInt64($StartBinary, 2)
-        [decimal] $EndInt = [System.Convert]::ToInt64($EndBinary, 2)
+        [Decimal] $StartInt = [System.Convert]::ToInt64($StartBinary, 2)
+        [Decimal] $EndInt = [System.Convert]::ToInt64($EndBinary, 2)
         for ($BinaryIP = $StartInt; $BinaryIP -le $EndInt; $BinaryIP++)
         {
             Convert-BinaryToIP ([System.Convert]::ToString($BinaryIP, 2).PadLeft(32, '0'))
@@ -619,14 +639,14 @@ function Invoke-PSipcalc {
 
     function Test-IPIsInNetwork {
         param(
-            [string] $IP,
-            [string] $StartBinary,
-            [string] $EndBinary
+            [String] $IP,
+            [String] $StartBinary,
+            [String] $EndBinary
         )
         $TestIPBinary = Convert-IPToBinary $IP
-        [decimal] $TestIPInt64 = [System.Convert]::ToInt64($TestIPBinary, 2)
-        [decimal] $StartInt64 = [System.Convert]::ToInt64($StartBinary, 2)
-        [decimal] $EndInt64 = [System.Convert]::ToInt64($EndBinary, 2)
+        [Decimal] $TestIPInt64 = [System.Convert]::ToInt64($TestIPBinary, 2)
+        [Decimal] $StartInt64 = [System.Convert]::ToInt64($StartBinary, 2)
+        [Decimal] $EndInt64 = [System.Convert]::ToInt64($EndBinary, 2)
         if ($TestIPInt64 -ge $StartInt64 -and $TestIPInt64 -le $EndInt64)
         {
             return $True
@@ -640,15 +660,14 @@ function Invoke-PSipcalc {
     function Get-NetworkInformationFromProperCIDR
     {
         param(
-            [psobject] $CIDRObject
-        )
+            [PSObject] $CIDRObject)
         $o = '' | Select-Object -Property IP, NetworkLength, SubnetMask, NetworkAddress, HostMin, HostMax, 
             Broadcast, UsableHosts, TotalHosts, IPEnumerated, BinaryIP, BinarySubnetMask, BinaryNetworkAddress,
             BinaryBroadcast
-        $o.IP = [string] $CIDRObject.IP
-        $o.BinaryIP = Convert-IPToBinary $o.IP
-        $o.NetworkLength = [int32] $CIDRObject.NetworkLength
-        $o.SubnetMask = Convert-BinaryToIP ('1' * $o.NetworkLength).PadRight(32, '0')
+        $o.IP = [String] $CIDRObject.IP
+        $o.BinaryIP = Convert-IPToBinary -IP $o.IP
+        $o.NetworkLength = [Int32] $CIDRObject.NetworkLength
+        $o.SubnetMask = Convert-BinaryToIP -Binary ('1' * $o.NetworkLength).PadRight(32, '0')
         $o.BinarySubnetMask = ('1' * $o.NetworkLength).PadRight(32, '0')
         $o.BinaryNetworkAddress = $o.BinaryIP.SubString(0, $o.NetworkLength).PadRight(32, '0')
         if ($Contains)
@@ -656,7 +675,9 @@ function Invoke-PSipcalc {
             if ($Contains -match "\A${IPv4Regex}\z")
             {
                 # Passing in IP to test, start binary and end binary.
-                return Test-IPIsInNetwork $Contains $o.BinaryNetworkAddress $o.BinaryNetworkAddress.SubString(0, $o.NetworkLength).PadRight(32, '1')
+                return Test-IPIsInNetwork -IP $Contains `
+                    -StartBinary $o.BinaryNetworkAddress `
+                    -EndBinary $o.BinaryNetworkAddress.SubString(0, $o.NetworkLength).PadRight(32, '1')
             }
             else
             {
@@ -675,44 +696,47 @@ function Invoke-PSipcalc {
         }
         #$o.HostMax = Convert-BinaryToIP ([System.Convert]::ToString((([System.Convert]::ToInt64($o.BinaryNetworkAddress.SubString(0, $o.NetworkLength)).PadRight(32, '1'), 2) - 1), 2).PadLeft(32, '0'))
         #$o.HostMax = 
-        [string] $BinaryBroadcastIP = $o.BinaryNetworkAddress.SubString(0, $o.NetworkLength).PadRight(32, '1') # this gives broadcast... need minus one.
+        [String] $BinaryBroadcastIP = $o.BinaryNetworkAddress.SubString(0, $o.NetworkLength).PadRight(32, '1') # this gives broadcast... need minus one.
         $o.BinaryBroadcast = $BinaryBroadcastIP
-        [decimal] $DecimalHostMax = [System.Convert]::ToInt64($BinaryBroadcastIP, 2) - 1
-        [string] $BinaryHostMax = [System.Convert]::ToString($DecimalHostMax, 2).PadLeft(32, '0')
+        [Decimal] $DecimalHostMax = [System.Convert]::ToInt64($BinaryBroadcastIP, 2) - 1
+        [String] $BinaryHostMax = [System.Convert]::ToString($DecimalHostMax, 2).PadLeft(32, '0')
         $o.HostMax = Convert-BinaryToIP -Binary $BinaryHostMax
-        $o.TotalHosts = [decimal][System.Convert]::ToString(([System.Convert]::ToInt64($BinaryBroadcastIP, 2) - [System.Convert]::ToInt64($o.BinaryNetworkAddress, 2) + 1))
+        $o.TotalHosts = [Decimal][System.Convert]::ToString(
+            ([System.Convert]::ToInt64($BinaryBroadcastIP, 2) - [System.Convert]::ToInt64($o.BinaryNetworkAddress, 2) + 1)
+        )
         $o.UsableHosts = $o.TotalHosts - 2
         # ugh, exceptions for network lengths from 30..32
         if ($o.NetworkLength -eq 32)
         {
             $o.Broadcast = $Null
-            $o.UsableHosts = [decimal] 1
-            $o.TotalHosts = [decimal] 1
+            $o.UsableHosts = [Decimal] 1
+            $o.TotalHosts = [Decimal] 1
             $o.HostMax = $o.IP
         }
         elseif ($o.NetworkLength -eq 31)
         {
             $o.Broadcast = $Null
-            $o.UsableHosts = [decimal] 2
-            $o.TotalHosts = [decimal] 2
+            $o.UsableHosts = [Decimal] 2
+            $o.TotalHosts = [Decimal] 2
             # Override the earlier set value for this (bloody exceptions).
-            [decimal] $DecimalHostMax2 = [System.Convert]::ToInt64($BinaryBroadcastIP, 2) # not minus one here like for the others
-            [string] $BinaryHostMax2 = [System.Convert]::ToString($DecimalHostMax2, 2).PadLeft(32, '0')
-            $o.HostMax = Convert-BinaryToIP $BinaryHostMax2
+            [Decimal] $DecimalHostMax2 = [System.Convert]::ToInt64($BinaryBroadcastIP, 2) # not minus one here like for the others
+            [String] $BinaryHostMax2 = [System.Convert]::ToString($DecimalHostMax2, 2).PadLeft(32, '0')
+            $o.HostMax = Convert-BinaryToIP -Binary $BinaryHostMax2
         }
         elseif ($o.NetworkLength -eq 30)
         {
-            $o.UsableHosts = [decimal] 2
-            $o.TotalHosts = [decimal] 4
-            $o.Broadcast = Convert-BinaryToIP $BinaryBroadcastIP
+            $o.UsableHosts = [Decimal] 2
+            $o.TotalHosts = [Decimal] 4
+            $o.Broadcast = Convert-BinaryToIP -Binary $BinaryBroadcastIP
         }
         else
         {
-            $o.Broadcast = Convert-BinaryToIP $BinaryBroadcastIP
+            $o.Broadcast = Convert-BinaryToIP -Binary $BinaryBroadcastIP
         }
         if ($Enumerate)
         {
-            $IPRange = @(Get-IPRange $o.BinaryNetworkAddress $o.BinaryNetworkAddress.SubString(0, $o.NetworkLength).PadRight(32, '1'))
+            $IPRange = @(Get-IPRange -StartBinary $o.BinaryNetworkAddress `
+                -EndBinary $o.BinaryNetworkAddress.SubString(0, $o.NetworkLength).PadRight(32, '1'))
             if ((31, 32) -notcontains $o.NetworkLength )
             {
                 $IPRange = $IPRange[1..($IPRange.Count-1)] # remove first element
@@ -720,13 +744,21 @@ function Invoke-PSipcalc {
             }
             $o.IPEnumerated = $IPRange
         }
-        else {
+        else
+        {
             $o.IPEnumerated = @()
         }
         return $o
     }
-    $NetworkAddress | ForEach { Get-ProperCIDR -CIDRString $_ } | ForEach { Get-NetworkInformationFromProperCIDR -CIDRObject $_ }
+    $NetworkAddress | ForEach-Object {
+        Get-ProperCIDR -CIDRString $_
+    } | ForEach-Object {
+        Get-NetworkInformationFromProperCIDR -CIDRObject $_
+    }
 }
-New-Alias -Name PSnmap -Value Invoke-PSnmap -Description 'PowerShell nmap' -Scope Global
-New-Alias -Name PSipcalc -Value Invoke-PSipcalc -Description 'PowerShell ipcalc' -Scope Global
-Export-ModuleMember -Function Invoke-PSnmap, Invoke-PSipcalc
+New-Alias -Name PSnmap -Value Invoke-PSnmap -Description 'PowerShell nmap' `
+    -Scope Global -ErrorAction SilentlyContinue
+New-Alias -Name PSipcalc -Value Invoke-PSipcalc -Description 'PowerShell ipcalc' `
+    -Scope Global -ErrorAction SilentlyContinue
+
+#Export-ModuleMember -Function Invoke-PSnmap, Invoke-PSipcalc # now handled in manifest
