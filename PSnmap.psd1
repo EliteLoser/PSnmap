@@ -108,6 +108,7 @@ PrivateData = @{
 
         # ReleaseNotes of this module
         ReleaseNotes = '* Code refactoring.
+* Readability.
 * Added the -AddService parameter using an IANA services port number CSV file.
 * Conforming more to standards. PSScriptAnalyzer standardization.'
 
