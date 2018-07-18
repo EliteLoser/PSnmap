@@ -465,7 +465,7 @@ function Invoke-PSnmap {
             }
         } |
         Select-Object -Property $Script:TestPortProperties
-    Write-Verbose -Message '"Exporting" $Global:STTestPortData and $Global:STTestPortDataProperties'
+    #Write-Verbose -Message '"Exporting" $Global:STTestPortData and $Global:STTestPortDataProperties'
     #$Global:STTestPortData = $PortData
     #$Global:STTestPortDataProperties = $Script:TestPortProperties
     if (-not $NoSummary)
