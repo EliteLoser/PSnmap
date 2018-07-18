@@ -409,18 +409,18 @@ function Invoke-PSnmap {
         {
             #Start-Sleep -Milliseconds 25
             $RunspaceCounter++
-            $psCMD = [System.Management.Automation.PowerShell]::Create().AddScript($ScriptBlock)
-            [void] $psCMD.AddParameter('ID', $RunspaceCounter)
-                [void] $psCMD.AddParameter('Computer', $Computer)
-                [void] $psCMD.AddParameter('Port', $p)
-                [void] $psCMD.AddParameter('Dns', $Null)
-                [void] $psCMD.AddParameter('PortConnectTimeout', $PortConnectTimeoutMs)
-                [void] $psCMD.AddParameter('Verbose', $VerbosePreference)
-                $psCMD.RunspacePool = $RunspacePool
+            $PSCMD = [System.Management.Automation.PowerShell]::Create().AddScript($ScriptBlock)
+            [Void] $PSCMD.AddParameter('ID', $RunspaceCounter)
+                [Void] $PSCMD.AddParameter('Computer', $Computer)
+                [Void] $PSCMD.AddParameter('Port', $p)
+                [Void] $PSCMD.AddParameter('Dns', $Null)
+                [Void] $PSCMD.AddParameter('PortConnectTimeout', $PortConnectTimeoutMs)
+                [Void] $PSCMD.AddParameter('Verbose', $VerbosePreference)
+                $PSCMD.RunspacePool = $RunspacePool
             Write-Verbose -Message "Starting $Computer, port $p"
             [void]$Runspaces.Add(@{
-                Handle = $psCMD.BeginInvoke()
-                PowerShell = $psCMD
+                Handle = $PSCMD.BeginInvoke()
+                PowerShell = $PSCMD
                 IObject = $Computer
                 ID = $RunspaceCounter
             })
