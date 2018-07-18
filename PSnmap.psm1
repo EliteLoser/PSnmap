@@ -209,7 +209,8 @@ function Invoke-PSnmap {
                 # Both IPv6 and IPv4 may be reported depending on your environment.
                 if ($HostEntry.HostName.Split('.')[0] -ieq $Computer.Split('.')[0])
                 {
-                    $IPDns = @($HostEntry | Select -Expand AddressList | Select -Expand IPAddressToString)
+                    $IPDns = @($HostEntry | Select-Object -Expand AddressList |
+                        Select-Object -Expand IPAddressToString)
                 }
                 else
                 {
@@ -264,7 +265,7 @@ function Invoke-PSnmap {
                     $Runspace.PowerShell = $null
                     $Runspace.Handle = $null
                 }
-                elseif ($Runspace.Handle -ne $null)
+                elseif ($null -ne $Runspace.Handle)
                 {
                     $More = $true
                 }
