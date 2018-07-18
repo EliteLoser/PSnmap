@@ -7,5 +7,9 @@ The module is in the PowerShell gallery, so with the proper environment (set up 
 
 `Install-Module -Name PSnmap -Scope CurrentUser`
 
+# Screenshot Example
+
+![alt_tag](/img/pnmap-example-with-service-attached.png)
+
 Svendsen Tech. Joakim Borger Svendsen.
 
