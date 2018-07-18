@@ -30,7 +30,7 @@ CompanyName = 'Svendsen Tech'
 Copyright = 'Copyright (c) 2015 Joakim Borger Svendsen. Svendsen Tech. All rights reserved.'
 
 # Description of the functionality provided by this module
-Description = 'Linux nmap for PowerShell (almost). Ping sweeps and scans a network for specified open ports. Can also perform DNS lookups.'
+Description = 'Svendsen Tech''s PSnmap is an asynchronous Linux nmap look-alike for PowerShell. Ping sweeps and scans a network (accepts CIDR notation) for specified open ports. Also performs DNS lookups.'
 
 # Minimum version of the Windows PowerShell engine required by this module
 PowerShellVersion = '2.0'
@@ -95,7 +95,7 @@ PrivateData = @{
     PSData = @{
 
         # Tags applied to this module. These help with module discovery in online galleries.
-        Tags = @("Port", "Scan", "TCP")
+        Tags = @("Port", "Scan", "TCP", "Asynchronous")
 
         # A URL to the license for this module.
         # LicenseUri = ''
