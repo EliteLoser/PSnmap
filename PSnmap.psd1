@@ -13,7 +13,7 @@
 ModuleToProcess = "PSnmap.psm1"
 
 # Version number of this module.
-ModuleVersion = '1.3.1'
+ModuleVersion = '1.3.2'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -108,11 +108,8 @@ PrivateData = @{
         # IconUri = ''
 
         # ReleaseNotes of this module
-        ReleaseNotes = '* Code refactoring.
-* Readability.
-* Added the -AddService parameter using an IANA services port number CSV file.
-* Conforming more to standards. PSScriptAnalyzer standardization.
-* Unbreak 1.3 module in 1.3.1.'
+        ReleaseNotes = '* Code improvements.
+ * Fix bug with CSV import on PSv1 and 2.'
 
         # External dependent modules of this module
         # ExternalModuleDependencies = ''
