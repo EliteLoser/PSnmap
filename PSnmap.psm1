@@ -118,7 +118,7 @@ function Invoke-PSnmap {
     # Copyright (c) 2015, Svendsen Tech, All rights reserved.
     # Author: Joakim Borger Svendsen
     # Runspace "framework" borrowed and adapted from Zachary Loeber's work.
-    # BSD 3-clause license - http://www.opensource.org/licenses/BSD-3-Clause
+    # MIT License.
     
     # July 20, 2015. beta1
     
