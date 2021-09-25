@@ -90,10 +90,10 @@ function Invoke-PSnmap {
     [CmdletBinding()]
     param(
         # CIDR, IP/subnet, IP, or DNS/NetBIOS name.
-        [Parameter(Mandatory=$true)]
-            [ValidateNotNullOrEmpty()]
-            [Alias('PSComputerName', 'Cn')]
-            [String[]] $ComputerName,
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [Alias('PSComputerName', 'Cn')]
+        [String[]] $ComputerName,
         # Port or ports to check.
         [Int[]] $Port,
         # Perform a DNS lookup.
