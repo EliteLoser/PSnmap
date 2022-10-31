@@ -131,10 +131,12 @@ function Invoke-PSnmap {
     $StartTime = Get-Date
     
     if ($AddService) {
-        if ($PSVersionTable.PSVersion.Major -eq 2) {
+        if ($PSVersionTable.PSVersion.Major -lt 3) {
             $MyScriptRoot = Split-Path -Path $MyInvocation.MyCommand.Path -Parent
         }
-        $MyScriptRoot = $PSScriptRoot
+        else {
+            $MyScriptRoot = $PSScriptRoot
+        }
         # https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.csv
         $IANAServicesFile = "$MyScriptRoot\service-names-port-numbers.csv"
     }
