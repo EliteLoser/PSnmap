@@ -9,7 +9,6 @@
 @{
 
 # Script module or binary module file associated with this manifest.
-# Omitted as it produced an error (despite Copilot's recommendation to use both)
 #RootModule = 'PSnmap.psm1'
 
 # For PSv2 compatibility:
@@ -31,7 +30,7 @@ Author = 'Joakim Borger Svendsen'
 CompanyName = 'Svendsen Tech'
 
 # Copyright statement for this module
-Copyright = 'Copyright (c) 2015 Joakim Borger Svendsen. Svendsen Tech. All rights reserved.'
+Copyright = 'Copyright (c) 2015-2026 Joakim Borger Svendsen. Svendsen Tech. All rights reserved.'
 
 # Description of the functionality provided by this module
 Description = 'Svendsen Tech''s PSnmap is an asynchronous Linux nmap look-alike for PowerShell. Ping sweeps and scans a network (accepts CIDR notation) for specified open ports. Also performs DNS lookups. GitHub here: https://github.com/EliteLoser/PSnmap/tree/master - blog documentation here: https://powershelladmin.com/wiki/Port_scan_subnets_with_PSnmap_for_PowerShell.php'
@@ -102,17 +101,17 @@ PrivateData = @{
         Tags = @("Port", "Scan", "TCP", "Asynchronous")
 
         # A URL to the license for this module.
-        # LicenseUri = ''
+        LicenseUri = 'https://github.com/EliteLoser/PSnmap/tree/master?tab=MIT-1-ov-file#readme'
 
         # A URL to the main website for this project.
-        # ProjectUri = ''
+        ProjectUri = 'https://github.com/EliteLoser/PSnmap/tree/master'
 
         # A URL to an icon representing this module.
         # IconUri = ''
 
         # ReleaseNotes of this module
         ReleaseNotes = '
-* Fix a bug with using the IANA services/ports on PSv2
+* Fix a bug with using the IANA services/ports on PSv2.
 * Updated service-names-port-numbers.csv with version from 2026-04-26.'
 
         # External dependent modules of this module
@@ -123,7 +122,7 @@ PrivateData = @{
 } # End of PrivateData hashtable
 
 # HelpInfo URI of this module
-# HelpInfoURI = ''
+HelpInfoURI = 'https://powershelladmin.com/wiki/Port_scan_subnets_with_PSnmap_for_PowerShell.php'
 
 # Default prefix for commands exported from this module. Override the default prefix using Import-Module -Prefix.
 # DefaultCommandPrefix = ''
