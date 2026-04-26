@@ -98,7 +98,7 @@ PrivateData = @{
     PSData = @{
 
         # Tags applied to this module. These help with module discovery in online galleries.
-        Tags = @("Port", "Scan", "TCP", "Asynchronous")
+        Tags = @("Port", "Scan", "TCP", "Asynchronous", "nmap", "Network")
 
         # A URL to the license for this module.
         LicenseUri = 'https://github.com/EliteLoser/PSnmap/tree/master?tab=MIT-1-ov-file#readme'
