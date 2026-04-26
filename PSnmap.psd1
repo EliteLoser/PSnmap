@@ -9,11 +9,13 @@
 @{
 
 # Script module or binary module file associated with this manifest.
-# RootModule = ''
+RootModule = 'PSnmap.psm1'
+
+# For PSv2 compatibility:
 ModuleToProcess = "PSnmap.psm1"
 
 # Version number of this module.
-ModuleVersion = '1.3.1'
+ModuleVersion = '1.3.2'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -31,7 +33,7 @@ CompanyName = 'Svendsen Tech'
 Copyright = 'Copyright (c) 2015 Joakim Borger Svendsen. Svendsen Tech. All rights reserved.'
 
 # Description of the functionality provided by this module
-Description = 'Svendsen Tech''s PSnmap is an asynchronous Linux nmap look-alike for PowerShell. Ping sweeps and scans a network (accepts CIDR notation) for specified open ports. Also performs DNS lookups.'
+Description = 'Svendsen Tech''s PSnmap is an asynchronous Linux nmap look-alike for PowerShell. Ping sweeps and scans a network (accepts CIDR notation) for specified open ports. Also performs DNS lookups. GitHub here: https://github.com/EliteLoser/PSnmap/tree/master - blog documentation here: https://powershelladmin.com/wiki/Port_scan_subnets_with_PSnmap_for_PowerShell.php'
 
 # Minimum version of the Windows PowerShell engine required by this module
 PowerShellVersion = '2.0'
@@ -108,11 +110,8 @@ PrivateData = @{
         # IconUri = ''
 
         # ReleaseNotes of this module
-        ReleaseNotes = '* Code refactoring.
-* Readability.
-* Added the -AddService parameter using an IANA services port number CSV file.
-* Conforming more to standards. PSScriptAnalyzer standardization.
-* Unbreak 1.3 module in 1.3.1.'
+        ReleaseNotes = '
+* Fix a bug with using the IANA services/ports on PSv2'
 
         # External dependent modules of this module
         # ExternalModuleDependencies = ''
