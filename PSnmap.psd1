@@ -9,7 +9,8 @@
 @{
 
 # Script module or binary module file associated with this manifest.
-RootModule = 'PSnmap.psm1'
+# Omitted as it produced an error (despite Copilot's recommendation to use both)
+#RootModule = 'PSnmap.psm1'
 
 # For PSv2 compatibility:
 ModuleToProcess = "PSnmap.psm1"
