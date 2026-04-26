@@ -112,7 +112,8 @@ PrivateData = @{
 
         # ReleaseNotes of this module
         ReleaseNotes = '
-* Fix a bug with using the IANA services/ports on PSv2'
+* Fix a bug with using the IANA services/ports on PSv2
+* It also appears the service-names-port-numbers.csv was missing in the old release. Added.'
 
         # External dependent modules of this module
         # ExternalModuleDependencies = ''
